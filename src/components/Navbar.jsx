@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { Mic, Settings, Sun, Moon, Monitor, X, Check, RefreshCw } from 'lucide-react';
+import { Mic, Settings, Sun, Moon, Monitor, X, Check, RefreshCw, LogIn, LogOut, UserPlus, User } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function Navbar() {
   const { 
+    user,
     deviceFrame, 
     setDeviceFrame, 
     themeMode, 
     setThemeMode,
+    setIsAuthModalOpen,
+    logout,
     showToast
   } = useApp();
 
@@ -84,6 +87,72 @@ export default function Navbar() {
           </div>
 
           <div className="full-page-body">
+            {/* Account & Auth Section */}
+            <div style={{
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--bg-card-border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '16px',
+              marginBottom: '20px'
+            }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--text-primary)', display: 'block', marginBottom: '12px' }}>
+                ACCOUNT & AUTHENTICATION
+              </label>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                <img src={user.avatar} alt={user.name} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-primary)' }}>{user.name}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: '600' }}>@{user.username}</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  onClick={() => { setIsSettingsOpen(false); setIsAuthModalOpen(true); }}
+                  style={{
+                    flex: 1,
+                    background: 'var(--gradient-aqua)',
+                    color: '#0f172a',
+                    border: 'none',
+                    padding: '12px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.85rem',
+                    fontWeight: '800',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <LogIn size={16} />
+                  <span>Switch Account / Log In</span>
+                </button>
+
+                <button 
+                  onClick={() => { logout(); setIsSettingsOpen(false); }}
+                  style={{
+                    background: 'rgba(244,63,94,0.1)',
+                    border: '1px solid rgba(244,63,94,0.3)',
+                    color: 'var(--accent-rose)',
+                    padding: '12px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.85rem',
+                    fontWeight: '800',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <LogOut size={16} />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            </div>
+
             {/* 1. App Theme Selection */}
             <div style={{
               background: 'var(--bg-glass)',

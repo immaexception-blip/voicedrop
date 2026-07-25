@@ -10,6 +10,7 @@ import NotificationsView from './components/NotificationsView';
 import VoiceRecorderModal from './components/VoiceRecorderModal';
 import VoiceCommentModal from './components/VoiceCommentModal';
 import CreatorProfileModal from './components/CreatorProfileModal';
+import AuthModal from './components/AuthModal';
 
 function MainAppContent() {
   const { currentTab, posts, toastMessage } = useApp();
@@ -41,10 +42,11 @@ function MainAppContent() {
 
       <BottomNav />
 
-      {/* Studio Modals & Other Creator Profiles */}
+      {/* Studio Modals, Auth & Other Creator Profiles */}
       <VoiceRecorderModal />
       <VoiceCommentModal />
       <CreatorProfileModal />
+      <AuthModal />
 
       {/* Floating Toast Notification */}
       {toastMessage && (

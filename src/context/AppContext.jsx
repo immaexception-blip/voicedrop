@@ -25,6 +25,58 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : currentUser;
   });
 
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+
+  const loginWithEmail = async ({ email, password }) => {
+    const usernameSlug = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '_');
+    const authUser = {
+      id: `user_${Date.now()}`,
+      name: email.split('@')[0],
+      username: usernameSlug,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${usernameSlug}`,
+      bio: "🎙️ Documenting moments with real voice notes.",
+      voiceBioDuration: 8,
+      voiceBioTranscript: `Hi! Welcome to @${usernameSlug}'s voice channel on VoiceDrop!`,
+      followers: listenersList.length,
+      following: followingList.length,
+      postsCount: 0,
+      email: email
+    };
+
+    setUser(authUser);
+    localStorage.setItem('voicedrop_user', JSON.stringify(authUser));
+    setIsAuthModalOpen(false);
+    showToast(`Logged in as @${usernameSlug}! 👋`);
+  };
+
+  const signUpWithEmail = async ({ email, password, name, username }) => {
+    const cleanUsername = username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+    const newUser = {
+      id: `user_${Date.now()}`,
+      name: name,
+      username: cleanUsername,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cleanUsername}`,
+      bio: "🎙️ Sharing authentic voice stories.",
+      voiceBioDuration: 6,
+      voiceBioTranscript: `Hey everyone, I'm ${name}! Welcome to my voice channel.`,
+      followers: 0,
+      following: 0,
+      postsCount: 0,
+      email: email
+    };
+
+    setUser(newUser);
+    localStorage.setItem('voicedrop_user', JSON.stringify(newUser));
+    setIsAuthModalOpen(false);
+    showToast(`Account created for @${cleanUsername}! 🎉`);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('voicedrop_user');
+    setUser(currentUser);
+    showToast("Logged out successfully 👋");
+  };
+
   const removeListener = (id, username) => {
     setListenersList(prev => {
       const updated = prev.filter(item => item.id !== id);
@@ -312,6 +364,11 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider value={{
       posts,
       user,
+      isAuthModalOpen,
+      setIsAuthModalOpen,
+      loginWithEmail,
+      signUpWithEmail,
+      logout,
       listenersList,
       followingList,
       removeListener,
