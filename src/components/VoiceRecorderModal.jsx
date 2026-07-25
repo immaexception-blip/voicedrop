@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Mic, Square, Play, Pause, RefreshCw, Sparkles, Sliders, Check, Image as ImageIcon, Upload } from 'lucide-react';
+import { X, Mic, Square, Play, Pause, RefreshCw, Sparkles, Sliders, Check, Upload } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { generateWaveformHeights, formatDuration, generateVoiceBlob, playVoiceAudioSound, stopVoiceAudioSound, playRecordingBeep } from '../utils/audioUtils';
 
@@ -11,10 +11,10 @@ const presetPhotos = [
 ];
 
 const voiceMoods = [
-  { id: 'natural', name: 'Natural Voice', icon: '🎙️' },
-  { id: 'studio', name: 'Studio Clarity', icon: '✨' },
-  { id: 'podcast', name: 'Warm Podcast', icon: '📻' },
-  { id: 'ambient', name: 'Ambient Lounge', icon: '🌊' }
+  { id: 'natural', name: 'Natural Voice' },
+  { id: 'studio', name: 'Studio Clarity' },
+  { id: 'podcast', name: 'Warm Podcast' },
+  { id: 'ambient', name: 'Ambient Lounge' }
 ];
 
 export default function VoiceRecorderModal() {
@@ -53,141 +53,111 @@ export default function VoiceRecorderModal() {
 
   if (!isRecorderOpen) return null;
 
-  // Handle Gallery Photo Selection
-  const handleGalleryImageUpload = (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedPhoto(reader.result);
-        setCustomPhotoInput('');
-        showToast("Photo loaded from gallery 📷");
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Start Live Audio Recording + Voice-to-Text Live Transcription
   const startMicrophoneRecording = async () => {
-    // Play start recording chime beep
     playRecordingBeep();
-
-    setIsRecording(true);
-    setRecordingSeconds(0);
     setAudioBlobUrl(null);
+    setRecordingSeconds(0);
+    audioChunksRef.current = [];
+    setVoiceTranscript('');
 
-    // 1. Android & iOS Live Speech-to-Text Transcriber
-    try {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        setIsTranscribing(true);
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = 'en-US';
+    // Setup Web Speech API for Android & Browser Speech-to-Text Transcription
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
 
-        recognitionRef.current.onresult = (event) => {
-          let textResult = '';
-          for (let i = 0; i < event.results.length; i++) {
-            textResult += event.results[i][0].transcript + ' ';
+        recognition.onstart = () => setIsTranscribing(true);
+        recognition.onresult = (event) => {
+          let currentTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
           }
-          if (textResult.trim()) {
-            setVoiceTranscript(textResult.trim());
+          if (currentTranscript.trim()) {
+            setVoiceTranscript(currentTranscript);
           }
         };
+        recognition.onerror = () => setIsTranscribing(false);
+        recognition.onend = () => setIsTranscribing(false);
 
-        recognitionRef.current.onerror = () => setIsTranscribing(false);
-        recognitionRef.current.start();
+        recognition.start();
+        recognitionRef.current = recognition;
+      } catch (e) {
+        console.warn("Speech recognition error:", e);
       }
-    } catch (e) {
-      console.warn("Speech recognition not supported on device", e);
     }
 
-    // 2. Live Audio Capture
     try {
-      audioChunksRef.current = [];
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        
-        let options = {};
-        if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
-          if (MediaRecorder.isTypeSupported('audio/mp4')) {
-            options = { mimeType: 'audio/mp4' };
-          } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-            options = { mimeType: 'audio/webm;codecs=opus' };
-          } else if (MediaRecorder.isTypeSupported('audio/webm')) {
-            options = { mimeType: 'audio/webm' };
-          } else if (MediaRecorder.isTypeSupported('audio/aac')) {
-            options = { mimeType: 'audio/aac' };
-          }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
         }
+      };
 
-        mediaRecorderRef.current = new MediaRecorder(stream, options);
-        
-        mediaRecorderRef.current.ondataavailable = (event) => {
-          if (event.data && event.data.size > 0) {
-            audioChunksRef.current.push(event.data);
-          }
-        };
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const url = URL.createObjectURL(audioBlob);
+        setAudioBlobUrl(url);
 
-        mediaRecorderRef.current.onstop = () => {
-          const type = mediaRecorderRef.current?.mimeType || 'audio/webm';
-          const blob = new Blob(audioChunksRef.current, { type });
-          
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            if (reader.result) {
-              setAudioBlobUrl(reader.result);
-            }
-          };
-          reader.readAsDataURL(blob);
+        stream.getTracks().forEach(track => track.stop());
+      };
 
-          stream.getTracks().forEach(track => track.stop());
-        };
-
-        mediaRecorderRef.current.start(100);
-      }
-    } catch (err) {
-      console.warn("Microphone access fallback", err);
+      mediaRecorder.start(200);
+      setIsRecording(true);
+      showToast("Recording live voice caption...");
+    } catch (e) {
+      // Fallback synthetic voice blob generator if mic permission denied
+      setIsRecording(true);
+      showToast("Recording voice...");
     }
   };
 
-  const stopMicrophoneRecording = async () => {
+  const stopMicrophoneRecording = () => {
     setIsRecording(false);
     setIsTranscribing(false);
-    const durationSec = recordingSeconds > 0 ? recordingSeconds : 5;
 
-    // Stop Speech Recognition
     if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch(e){}
+      try { recognitionRef.current.stop(); } catch (e) {}
     }
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     } else {
-      const synthesized = await generateVoiceBlob("Voice Note", durationSec);
-      if (synthesized) {
-        setAudioBlobUrl(synthesized.url);
-      } else {
-        setAudioBlobUrl('simulated_voice_blob');
-      }
+      const fallbackBlobUrl = generateVoiceBlob(recordingSeconds || 8);
+      setAudioBlobUrl(fallbackBlobUrl);
     }
+  };
 
-    showToast("Voice caption recorded! 🎙️");
+  const handleGalleryImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setCustomPhotoInput(event.target.result);
+        showToast("Photo selected from gallery!");
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleResetRecord = () => {
-    setIsRecording(false);
-    setIsTranscribing(false);
-    setRecordingSeconds(0);
+    stopVoiceAudioSound();
+    setIsPlayingPreview(false);
     setAudioBlobUrl(null);
+    setRecordingSeconds(0);
     setVoiceTranscript('');
   };
 
   const handlePublish = () => {
-    const finalPhoto = customPhotoInput || selectedPhoto;
-    const hasAudio = !!audioBlobUrl;
-    const duration = recordingSeconds > 0 ? recordingSeconds : (hasAudio ? 12 : 0);
+    const finalPhoto = customPhotoInput.trim() || selectedPhoto;
+    const duration = recordingSeconds || (audioBlobUrl ? 12 : 0);
+    const hasAudio = duration > 0;
 
     addNewPost({
       imageUrl: finalPhoto,
@@ -196,37 +166,59 @@ export default function VoiceRecorderModal() {
       title: voiceTitle || (hasAudio ? "Voice Note Story" : ""),
       transcript: voiceTranscript || "",
       textCaption: textCaption,
-      waveform: hasAudio ? generateWaveformHeights(32, Math.random() * 100) : [],
-      tags: ["#VoiceDrop"]
+      waveform: hasAudio ? generateWaveformHeights(32, Math.random() * 100) : []
     });
   };
 
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setIsRecorderOpen(false)}>
-      <div className="modal-content" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-        <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Sparkles size={20} color="var(--accent-aqua)" />
-            <span className="modal-title">Create VoiceDrop Post</span>
-          </div>
-          <button className="close-btn" onClick={() => setIsRecorderOpen(false)}>
-            <X size={18} />
-          </button>
+    <div className="full-page-screen">
+      {/* Instagram-style Full Page Header */}
+      <div className="full-page-header">
+        <button 
+          onClick={() => setIsRecorderOpen(false)}
+          style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', padding: '4px' }}
+        >
+          <X size={22} />
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Sparkles size={18} color="var(--accent-aqua)" />
+          <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: '800', fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+            New VoiceDrop
+          </span>
         </div>
 
+        <button 
+          onClick={handlePublish}
+          style={{
+            background: 'var(--gradient-aqua)',
+            border: 'none',
+            color: '#0f172a',
+            padding: '6px 14px',
+            borderRadius: '20px',
+            fontSize: '0.8rem',
+            fontWeight: '800',
+            cursor: 'pointer'
+          }}
+        >
+          Share
+        </button>
+      </div>
+
+      {/* Full Page Studio Scrollable Body */}
+      <div className="full-page-body">
         {/* Step 1: Responsive Photo Selector */}
-        <div style={{ marginBottom: '16px' }}>
+        <div style={{ marginBottom: '20px' }}>
           <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '8px' }}>
-            1. SELECT STORY PHOTO 📷
+            1. SELECT STORY PHOTO
           </label>
 
-          {/* Large Responsive Selected Image Preview */}
-          <div style={{ width: '100%', height: '160px', borderRadius: '14px', overflow: 'hidden', border: '2px solid var(--accent-aqua)', marginBottom: '10px', position: 'relative' }}>
+          {/* Large Image Preview */}
+          <div style={{ width: '100%', height: '220px', borderRadius: '16px', overflow: 'hidden', border: '2px solid var(--accent-aqua)', marginBottom: '12px', position: 'relative' }}>
             <img src={customPhotoInput || selectedPhoto} alt="Selected" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
 
-          {/* Action Row: Gallery Upload & Presets */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
             <button 
               onClick={() => fileInputRef.current && fileInputRef.current.click()}
               style={{
@@ -234,9 +226,9 @@ export default function VoiceRecorderModal() {
                 background: 'var(--gradient-aqua)',
                 color: '#0f172a',
                 border: 'none',
-                padding: '10px 12px',
+                padding: '10px 14px',
                 borderRadius: 'var(--radius-md)',
-                fontSize: '0.8rem',
+                fontSize: '0.82rem',
                 fontWeight: '800',
                 display: 'flex',
                 alignItems: 'center',
@@ -246,7 +238,7 @@ export default function VoiceRecorderModal() {
               }}
             >
               <Upload size={16} />
-              <span>Choose from Phone Gallery</span>
+              <span>Choose from Gallery / Photos</span>
             </button>
             <input 
               type="file"
@@ -257,7 +249,6 @@ export default function VoiceRecorderModal() {
             />
           </div>
 
-          {/* Preset Images Grid */}
           <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none', marginBottom: '10px' }}>
             {presetPhotos.map((url, idx) => (
               <img 
@@ -265,8 +256,8 @@ export default function VoiceRecorderModal() {
                 src={url} 
                 alt={`Preset ${idx}`} 
                 style={{
-                  width: '60px',
-                  height: '60px',
+                  width: '64px',
+                  height: '64px',
                   borderRadius: '10px',
                   objectFit: 'cover',
                   flexShrink: 0,
@@ -284,22 +275,22 @@ export default function VoiceRecorderModal() {
 
           <input 
             type="text"
-            placeholder="Or paste custom image URL link..."
+            placeholder="Or paste public image URL link..."
             value={customPhotoInput}
             onChange={(e) => setCustomPhotoInput(e.target.value)}
             className="text-input-field"
-            style={{ fontSize: '0.8rem', padding: '8px 12px' }}
+            style={{ fontSize: '0.8rem', padding: '10px 14px' }}
           />
         </div>
 
-        {/* Step 2: Optional Voice Recording */}
-        <div className="recorder-box">
+        {/* Step 2: Voice Recording */}
+        <div className="recorder-box" style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginBottom: '12px' }}>
             <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-secondary)' }}>
-              2. VOICE CAPTION (OPTIONAL 🎙️)
+              2. VOICE CAPTION (OPTIONAL)
             </label>
             <span style={{ fontSize: '0.72rem', color: 'var(--accent-aqua)', fontWeight: '700' }}>
-              {audioBlobUrl ? "Voice Recorded ✅" : "Optional"}
+              {audioBlobUrl ? "Voice Recorded" : "Optional"}
             </span>
           </div>
 
@@ -308,7 +299,6 @@ export default function VoiceRecorderModal() {
               <button 
                 className={`record-btn-trigger ${isRecording ? 'recording' : ''}`}
                 onClick={isRecording ? stopMicrophoneRecording : startMicrophoneRecording}
-                title={isRecording ? "Stop Recording" : "Start Recording"}
               >
                 {isRecording ? <Square size={26} fill="#0f172a" color="#0f172a" /> : <Mic size={32} color="#0f172a" />}
               </button>
@@ -318,7 +308,7 @@ export default function VoiceRecorderModal() {
               </div>
 
               <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '6px', fontWeight: '600' }}>
-                {isRecording ? "🔴 Recording & transcribing live voice... Tap to finish" : "Tap microphone to record voice caption"}
+                {isRecording ? "Recording live voice... Tap to finish" : "Tap microphone to record voice caption"}
               </span>
             </>
           ) : (
@@ -386,7 +376,7 @@ export default function VoiceRecorderModal() {
 
         {/* Step 3: Voice Mood Presets */}
         {audioBlobUrl && (
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '20px' }}>
             <label style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
               <Sliders size={14} color="var(--accent-aqua)" /> VOICE MOOD FILTER
             </label>
@@ -399,17 +389,16 @@ export default function VoiceRecorderModal() {
                     background: selectedMood === m.id ? 'var(--gradient-aqua)' : 'var(--bg-glass)',
                     color: selectedMood === m.id ? '#0f172a' : 'var(--text-primary)',
                     border: selectedMood === m.id ? 'none' : '1px solid var(--bg-card-border)',
-                    padding: '8px 12px',
+                    padding: '10px 12px',
                     borderRadius: 'var(--radius-md)',
-                    fontSize: '0.78rem',
+                    fontSize: '0.8rem',
                     fontWeight: '700',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
+                    justifyContent: 'center',
                     cursor: 'pointer'
                   }}
                 >
-                  <span>{m.icon}</span>
                   <span>{m.name}</span>
                 </button>
               ))}
@@ -417,10 +406,10 @@ export default function VoiceRecorderModal() {
           </div>
         )}
 
-        {/* Step 4: Live Speech-to-Text Transcription & Text Captions */}
-        <div>
+        {/* Step 4: Text Transcripts & Captions */}
+        <div style={{ marginBottom: '24px' }}>
           <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-secondary)', display: 'block', marginBottom: '8px' }}>
-            3. VOICE-TO-TEXT TRANSCRIPT & CAPTIONS 📝
+            3. VOICE TRANSCRIPT & CAPTIONS
           </label>
 
           <input 
@@ -432,7 +421,7 @@ export default function VoiceRecorderModal() {
           />
 
           <textarea 
-            placeholder={isTranscribing ? "🎙️ Transcribing your spoken voice live..." : "Spoken voice transcript (auto-transcribed or type manually)..."}
+            placeholder={isTranscribing ? "Transcribing your spoken voice live..." : "Spoken voice transcript..."}
             value={voiceTranscript}
             onChange={(e) => setVoiceTranscript(e.target.value)}
             className="text-input-field"
@@ -441,16 +430,16 @@ export default function VoiceRecorderModal() {
 
           <input 
             type="text"
-            placeholder="Optional text caption & hashtags (#VoiceDrop)..."
+            placeholder="Optional text caption..."
             value={textCaption}
             onChange={(e) => setTextCaption(e.target.value)}
             className="text-input-field"
           />
         </div>
 
-        {/* Publish Button */}
-        <button className="primary-btn" onClick={handlePublish}>
-          🚀 Share Post to Feed
+        {/* Bottom Full Share Button */}
+        <button className="primary-btn" onClick={handlePublish} style={{ padding: '14px', fontSize: '1rem' }}>
+          Share Post to Feed
         </button>
       </div>
     </div>

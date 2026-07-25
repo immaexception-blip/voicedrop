@@ -3,6 +3,43 @@
 let globalAudioInstance = null;
 
 /**
+ * Dynamic real-time relative time formatter (e.g. "Just now", "5 mins ago", "1 hr ago", "2 days ago")
+ */
+export const formatRelativeTime = (timestampOrString) => {
+  if (!timestampOrString) return "Just now";
+
+  let timestamp = typeof timestampOrString === 'number' ? timestampOrString : Date.parse(timestampOrString);
+
+  if (isNaN(timestamp)) {
+    if (timestampOrString === "Just now") return "Just now";
+    return timestampOrString;
+  }
+
+  const now = Date.now();
+  const diffSeconds = Math.max(0, Math.floor((now - timestamp) / 1000));
+
+  if (diffSeconds < 45) return "Just now";
+  
+  const diffMins = Math.floor(diffSeconds / 60);
+  if (diffMins < 60) {
+    return diffMins === 1 ? "1 min ago" : `${diffMins} mins ago`;
+  }
+
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) {
+    return diffHours === 1 ? "1 hr ago" : `${diffHours} hrs ago`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) {
+    return diffDays === 1 ? "1 day ago" : `${diffDays} days ago`;
+  }
+
+  const diffWeeks = Math.floor(diffDays / 7);
+  return diffWeeks === 1 ? "1 wk ago" : `${diffWeeks} wks ago`;
+};
+
+/**
  * Play recording start beep notification sound (880Hz high-pitch chime)
  */
 export const playRecordingBeep = () => {

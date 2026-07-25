@@ -1,104 +1,258 @@
-import React from 'react';
-import { Mic, Bell, Monitor } from 'lucide-react';
+import React, { useState } from 'react';
+import { Mic, Settings, Sun, Moon, Monitor, X, Check, RefreshCw } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function Navbar() {
   const { 
     deviceFrame, 
     setDeviceFrame, 
-    unreadNotifications,
-    setCurrentTab
+    themeMode, 
+    setThemeMode,
+    showToast
   } = useApp();
 
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const handleClearCache = () => {
+    localStorage.removeItem('voicedrop_posts');
+    showToast("App cache refreshed! 🧹");
+    setTimeout(() => window.location.reload(), 800);
+  };
+
   return (
-    <header className="app-header">
-      <div className="brand-logo">
-        <div className="logo-mic-icon">
-          <Mic size={16} />
-        </div>
-        <span>VoiceDrop</span>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {/* Device Viewport Selector */}
-        <div style={{ display: 'flex', gap: '3px', background: 'var(--bg-glass)', padding: '3px', borderRadius: '20px', border: '1px solid var(--bg-card-border)' }}>
-          <button 
-            title="iOS Simulator"
-            onClick={() => setDeviceFrame('ios')}
-            style={{
-              background: deviceFrame === 'ios' ? 'var(--gradient-voice)' : 'transparent',
-              color: deviceFrame === 'ios' ? '#18181b' : 'var(--text-muted)',
-              border: 'none',
-              borderRadius: '50%',
-              width: '24px',
-              height: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              fontSize: '0.7rem'
-            }}
-          >
-            🍎
-          </button>
-          <button 
-            title="Android Simulator"
-            onClick={() => setDeviceFrame('android')}
-            style={{
-              background: deviceFrame === 'android' ? 'var(--gradient-voice)' : 'transparent',
-              color: deviceFrame === 'android' ? '#18181b' : 'var(--text-muted)',
-              border: 'none',
-              borderRadius: '50%',
-              width: '24px',
-              height: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              fontSize: '0.7rem'
-            }}
-          >
-            🤖
-          </button>
-          <button 
-            title="Full Window"
-            onClick={() => setDeviceFrame('full')}
-            style={{
-              background: deviceFrame === 'full' ? 'var(--gradient-voice)' : 'transparent',
-              color: deviceFrame === 'full' ? '#18181b' : 'var(--text-muted)',
-              border: 'none',
-              borderRadius: '50%',
-              width: '24px',
-              height: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              fontSize: '0.7rem'
-            }}
-          >
-            <Monitor size={12} />
-          </button>
+    <>
+      <header className="app-header">
+        <div className="brand-logo">
+          <div className="logo-mic-icon">
+            <Mic size={16} />
+          </div>
+          <span>VoiceDrop</span>
         </div>
 
-        {/* Notifications */}
-        <button 
-          onClick={() => setCurrentTab('notifications')}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-primary)',
-            position: 'relative',
-            cursor: 'pointer',
-            padding: '4px'
-          }}
-        >
-          <Bell size={20} />
-          {unreadNotifications > 0 && (
-            <span className="badge-dot" />
-          )}
-        </button>
-      </div>
-    </header>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* App Settings Top-Right Button */}
+          <button 
+            onClick={() => setIsSettingsOpen(true)}
+            style={{
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--bg-card-border)',
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+              padding: '6px 10px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="App Settings"
+          >
+            <Settings size={18} color="var(--accent-aqua)" />
+          </button>
+        </div>
+      </header>
+
+      {/* App Settings Instagram-Style Full Page Screen */}
+      {isSettingsOpen && (
+        <div className="full-page-screen">
+          <div className="full-page-header">
+            <button 
+              onClick={() => setIsSettingsOpen(false)}
+              style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', padding: '4px' }}
+            >
+              <X size={22} />
+            </button>
+
+            <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: '800', fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+              App Settings
+            </span>
+
+            <button 
+              onClick={() => setIsSettingsOpen(false)}
+              style={{
+                background: 'var(--gradient-aqua)',
+                border: 'none',
+                color: '#0f172a',
+                padding: '6px 14px',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                fontWeight: '800',
+                cursor: 'pointer'
+              }}
+            >
+              Done
+            </button>
+          </div>
+
+          <div className="full-page-body">
+            {/* 1. App Theme Selection */}
+            <div style={{
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--bg-card-border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '16px',
+              marginBottom: '20px'
+            }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--text-primary)', display: 'block', marginBottom: '12px' }}>
+                APP APPEARANCE & THEME
+              </label>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                <button 
+                  onClick={() => setThemeMode('light')}
+                  style={{
+                    background: themeMode === 'light' ? 'var(--gradient-aqua)' : 'var(--bg-card)',
+                    color: themeMode === 'light' ? '#0f172a' : 'var(--text-primary)',
+                    border: themeMode === 'light' ? 'none' : '1px solid var(--bg-card-border)',
+                    padding: '14px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.88rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Sun size={18} />
+                  <span>White Theme</span>
+                </button>
+
+                <button 
+                  onClick={() => setThemeMode('dark')}
+                  style={{
+                    background: themeMode === 'dark' ? 'var(--gradient-aqua)' : 'var(--bg-card)',
+                    color: themeMode === 'dark' ? '#0f172a' : 'var(--text-primary)',
+                    border: themeMode === 'dark' ? 'none' : '1px solid var(--bg-card-border)',
+                    padding: '14px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.88rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Moon size={18} />
+                  <span>Black Theme</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Device Viewport Frame */}
+            <div style={{
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--bg-card-border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '16px',
+              marginBottom: '20px'
+            }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--text-primary)', display: 'block', marginBottom: '12px' }}>
+                DEVICE FRAME VIEWPORT
+              </label>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                <button 
+                  onClick={() => setDeviceFrame('ios')}
+                  style={{
+                    background: deviceFrame === 'ios' ? 'var(--gradient-aqua)' : 'var(--bg-card)',
+                    color: deviceFrame === 'ios' ? '#0f172a' : 'var(--text-primary)',
+                    border: deviceFrame === 'ios' ? 'none' : '1px solid var(--bg-card-border)',
+                    padding: '10px 8px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.78rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <span>🍎 iOS</span>
+                </button>
+
+                <button 
+                  onClick={() => setDeviceFrame('android')}
+                  style={{
+                    background: deviceFrame === 'android' ? 'var(--gradient-aqua)' : 'var(--bg-card)',
+                    color: deviceFrame === 'android' ? '#0f172a' : 'var(--text-primary)',
+                    border: deviceFrame === 'android' ? 'none' : '1px solid var(--bg-card-border)',
+                    padding: '10px 8px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.78rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <span>🤖 Android</span>
+                </button>
+
+                <button 
+                  onClick={() => setDeviceFrame('full')}
+                  style={{
+                    background: deviceFrame === 'full' ? 'var(--gradient-aqua)' : 'var(--bg-card)',
+                    color: deviceFrame === 'full' ? '#0f172a' : 'var(--text-primary)',
+                    border: deviceFrame === 'full' ? 'none' : '1px solid var(--bg-card-border)',
+                    padding: '10px 8px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '0.78rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <Monitor size={14} />
+                  <span>Full</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 3. Storage & Refresh */}
+            <div style={{
+              background: 'var(--bg-glass)',
+              border: '1px solid var(--bg-card-border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '16px'
+            }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: '800', color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>
+                DATA & CACHE
+              </label>
+
+              <button 
+                onClick={handleClearCache}
+                style={{
+                  width: '100%',
+                  background: 'rgba(244,63,94,0.1)',
+                  border: '1px solid rgba(244,63,94,0.2)',
+                  color: 'var(--accent-rose)',
+                  padding: '12px',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '0.85rem',
+                  fontWeight: '700',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                <RefreshCw size={16} />
+                <span>Reset Demo Storage Data</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

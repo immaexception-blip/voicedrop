@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Heart, Bookmark, Share2, CheckCircle2, Mic, ChevronDown, ChevronUp, MoreHorizontal, Trash2, Copy, VolumeX } from 'lucide-react';
+import { Heart, Bookmark, Share2, CheckCircle2, Mic, ChevronDown, ChevronUp, MoreHorizontal, Trash2, Copy, VolumeX, Pause } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { playVoiceAudioSound, stopVoiceAudioSound, formatRelativeTime } from '../utils/audioUtils';
 import AudioWaveform from './AudioWaveform';
 
 export default function PostCard({ post }) {
@@ -11,7 +12,9 @@ export default function PostCard({ post }) {
     toggleLike, 
     toggleBookmark,
     deletePost,
+    deleteVoiceComment,
     sharePost,
+    openCreatorProfile,
     openCommentModalForPost,
     showToast
   } = useApp();
@@ -20,6 +23,14 @@ export default function PostCard({ post }) {
   const [showVoiceComments, setShowVoiceComments] = useState(false);
   const [playingCommentId, setPlayingCommentId] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [expandedCommentTranscripts, setExpandedCommentTranscripts] = useState({});
+  const [, setTick] = useState(0);
+
+  // Auto-refresh relative time display every 15 seconds
+  React.useEffect(() => {
+    const timer = setInterval(() => setTick(t => t + 1), 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   const isCurrentPlaying = activePlayingId === post.id && isPlaying;
 
@@ -44,20 +55,26 @@ export default function PostCard({ post }) {
     }
   };
 
+  const toggleCommentTranscript = (commentId) => {
+    setExpandedCommentTranscripts(prev => ({
+      ...prev,
+      [commentId]: !prev[commentId]
+    }));
+  };
+
   return (
     <article className="post-card" style={{ position: 'relative' }}>
       {/* Post Header */}
       <div className="post-header">
-        <div className="creator-info">
+        <div className="creator-info" onClick={() => openCreatorProfile(post.creator)} style={{ cursor: 'pointer' }}>
           <div className="avatar-ring has-voice">
             <img src={post.creator.avatar} alt={post.creator.name} className="avatar-img" />
           </div>
           <div className="creator-names">
             <span className="creator-name">
               {post.creator.name}
-              {post.creator.verified && <CheckCircle2 size={14} className="verified-badge" fill="var(--accent-aqua)" color="#070c14" />}
             </span>
-            <span className="creator-username">@{post.creator.username} • {post.postedTime}</span>
+            <span className="creator-username">@{post.creator.username} • {formatRelativeTime(post.createdAt || post.postedTime)}</span>
           </div>
         </div>
 
@@ -138,28 +155,6 @@ export default function PostCard({ post }) {
               >
                 <Copy size={15} color="var(--text-secondary)" />
                 <span>Copy Transcript</span>
-              </button>
-
-              <button 
-                onClick={() => { setShowMenu(false); showToast(`Muted @${post.creator.username}`); }}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-primary)',
-                  fontSize: '0.82rem',
-                  fontWeight: '600',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  textAlign: 'left'
-                }}
-              >
-                <VolumeX size={15} color="var(--text-muted)" />
-                <span>Mute Creator</span>
               </button>
 
               <div style={{ height: '1px', background: 'var(--bg-card-border)', margin: '4px 0' }} />
@@ -275,36 +270,109 @@ export default function PostCard({ post }) {
               border: 'none',
               color: 'var(--text-muted)',
               fontSize: '0.78rem',
-              fontWeight: '600',
+              fontWeight: '700',
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
               cursor: 'pointer'
             }}
           >
-            {showVoiceComments ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {showVoiceComments ? <ChevronUp size={14} color="var(--accent-aqua)" /> : <ChevronDown size={14} color="var(--accent-aqua)" />}
             {showVoiceComments ? 'Hide Voice Comments' : `Listen to ${post.voiceComments.length} Voice Responses`}
           </button>
 
           {showVoiceComments && (
             <div className="voice-comments-preview" style={{ marginTop: '8px' }}>
               {post.voiceComments.map((vc) => (
-                <div key={vc.id} className="vc-item">
-                  <div className="vc-left">
-                    <img src={vc.user.avatar} alt={vc.user.name} className="vc-avatar" />
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: '700' }}>{vc.user.name}</span>
-                      <span className="vc-text">"{vc.transcript}"</span>
+                <div key={vc.id} className="vc-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <div className="vc-left">
+                      <img src={vc.user.avatar} alt={vc.user.name} className="vc-avatar" />
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: '800', color: 'var(--text-primary)' }}>{vc.user.name}</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{vc.duration || 8}s voice reply</span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button 
+                        className="vc-play-btn"
+                        onClick={() => {
+                          if (playingCommentId === vc.id) {
+                            setPlayingCommentId(null);
+                            stopVoiceAudioSound();
+                          } else {
+                            setPlayingCommentId(vc.id);
+                            playVoiceAudioSound({
+                              audioUrl: vc.audioUrl,
+                              duration: vc.duration || 8,
+                              onEnded: () => setPlayingCommentId(null)
+                            });
+                          }
+                        }}
+                        title={playingCommentId === vc.id ? "Pause Voice Reply" : "Play Voice Reply"}
+                      >
+                        {playingCommentId === vc.id ? <Pause size={14} fill="#0f172a" color="#0f172a" /> : <Mic size={14} />}
+                      </button>
+
+                      <button 
+                        onClick={() => deleteVoiceComment(post.id, vc.id)}
+                        style={{
+                          background: 'rgba(244,63,94,0.1)',
+                          border: 'none',
+                          color: 'var(--accent-rose)',
+                          padding: '6px',
+                          borderRadius: '50%',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                        title="Delete Voice Reply"
+                      >
+                        <Trash2 size={13} color="var(--accent-rose)" />
+                      </button>
                     </div>
                   </div>
-                  <button 
-                    className="vc-play-btn"
-                    onClick={() => {
-                      setPlayingCommentId(playingCommentId === vc.id ? null : vc.id);
-                    }}
-                  >
-                    <Mic size={14} />
-                  </button>
+
+                  {/* Collapsible Voice Response Spoken Transcript */}
+                  {vc.transcript && (
+                    <div style={{ width: '100%', marginTop: '2px' }}>
+                      <button 
+                        onClick={() => toggleCommentTranscript(vc.id)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          fontSize: '0.72rem',
+                          fontWeight: '600',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {expandedCommentTranscripts[vc.id] ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                        <span>{expandedCommentTranscripts[vc.id] ? 'Hide Transcript' : 'Read Transcript'}</span>
+                      </button>
+
+                      {expandedCommentTranscripts[vc.id] && (
+                        <div style={{
+                          marginTop: '4px',
+                          fontSize: '0.76rem',
+                          color: 'var(--text-secondary)',
+                          fontStyle: 'italic',
+                          background: 'var(--bg-glass)',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          borderLeft: '2px solid var(--accent-aqua)',
+                          lineHeight: '1.3'
+                        }}>
+                          "{vc.transcript}"
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { Play, Pause, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDuration } from '../utils/audioUtils';
 
 export default function AudioWaveform({ 
@@ -13,7 +13,7 @@ export default function AudioWaveform({
 }) {
   const [progress, setProgress] = useState(0);
   const [speed, setSpeed] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
 
   // Simulated audio playback progress animation
   useEffect(() => {
@@ -22,7 +22,7 @@ export default function AudioWaveform({
       interval = setInterval(() => {
         setProgress((prev) => {
           if (prev >= 100) {
-            onTogglePlay(); // stop playing when finished
+            onTogglePlay();
             return 0;
           }
           return prev + (100 / (duration * 10 * (1 / speed)));
@@ -75,7 +75,7 @@ export default function AudioWaveform({
           })}
         </div>
 
-        {/* Speed Control & Mute */}
+        {/* Speed Control */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
           <button className="speed-badge" onClick={toggleSpeed}>
             {speed}x
@@ -86,19 +86,43 @@ export default function AudioWaveform({
         </div>
       </div>
 
-      {/* Spoken Voice Transcript Preview */}
+      {/* Spoken Voice Transcript Collapsible Caret Toggle */}
       {transcript && (
-        <div style={{
-          marginTop: '10px',
-          fontSize: '0.78rem',
-          color: 'var(--text-secondary)',
-          fontStyle: 'italic',
-          background: 'rgba(0,0,0,0.2)',
-          padding: '6px 10px',
-          borderRadius: '8px',
-          borderLeft: '3px solid var(--accent-yellow)'
-        }}>
-          "{transcript}"
+        <div style={{ marginTop: '8px' }}>
+          <button 
+            onClick={() => setShowTranscript(!showTranscript)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              fontSize: '0.74rem',
+              fontWeight: '700',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              cursor: 'pointer',
+              padding: '2px 0'
+            }}
+          >
+            {showTranscript ? <ChevronUp size={13} color="var(--accent-aqua)" /> : <ChevronDown size={13} color="var(--accent-aqua)" />}
+            <span>{showTranscript ? 'Hide Transcript' : 'Read Transcript'}</span>
+          </button>
+
+          {showTranscript && (
+            <div style={{
+              marginTop: '6px',
+              fontSize: '0.78rem',
+              color: 'var(--text-secondary)',
+              fontStyle: 'italic',
+              background: 'var(--bg-glass)',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              borderLeft: '3px solid var(--accent-aqua)',
+              lineHeight: '1.3'
+            }}>
+              "{transcript}"
+            </div>
+          )}
         </div>
       )}
     </div>

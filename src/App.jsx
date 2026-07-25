@@ -4,11 +4,12 @@ import MobileDeviceFrame from './components/MobileDeviceFrame';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import PostCard from './components/PostCard';
-import ExploreView from './components/ExploreView';
 import ProfileView from './components/ProfileView';
+import SearchView from './components/SearchView';
 import NotificationsView from './components/NotificationsView';
 import VoiceRecorderModal from './components/VoiceRecorderModal';
 import VoiceCommentModal from './components/VoiceCommentModal';
+import CreatorProfileModal from './components/CreatorProfileModal';
 
 function MainAppContent() {
   const { currentTab, posts, toastMessage } = useApp();
@@ -31,7 +32,7 @@ function MainAppContent() {
           </div>
         )}
 
-        {currentTab === 'explore' && <ExploreView />}
+        {currentTab === 'search' && <SearchView />}
 
         {currentTab === 'notifications' && <NotificationsView />}
 
@@ -40,9 +41,10 @@ function MainAppContent() {
 
       <BottomNav />
 
-      {/* Studio Modals */}
+      {/* Studio Modals & Other Creator Profiles */}
       <VoiceRecorderModal />
       <VoiceCommentModal />
+      <CreatorProfileModal />
 
       {/* Floating Toast Notification */}
       {toastMessage && (

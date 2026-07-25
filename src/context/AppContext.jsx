@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { samplePosts, currentUser, trendingHashtags } from '../utils/initialData';
+import { samplePosts, currentUser, initialListeners, initialFollowing } from '../utils/initialData';
 import { speakCaptionText, playVoiceAudioSound, stopVoiceAudioSound } from '../utils/audioUtils';
 
 const AppContext = createContext();
@@ -10,8 +10,84 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : samplePosts;
   });
 
-  const [user, setUser] = useState(currentUser);
-  const [currentTab, setCurrentTab] = useState('feed'); // 'feed' | 'explore' | 'notifications' | 'profile'
+  const [listenersList, setListenersList] = useState(() => {
+    const saved = localStorage.getItem('voicedrop_listeners');
+    return saved ? JSON.parse(saved) : initialListeners;
+  });
+
+  const [followingList, setFollowingList] = useState(() => {
+    const saved = localStorage.getItem('voicedrop_following');
+    return saved ? JSON.parse(saved) : initialFollowing;
+  });
+
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('voicedrop_user');
+    return saved ? JSON.parse(saved) : currentUser;
+  });
+
+  const removeListener = (id, username) => {
+    setListenersList(prev => {
+      const updated = prev.filter(item => item.id !== id);
+      localStorage.setItem('voicedrop_listeners', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const unfollowUser = (id, username) => {
+    setFollowingList(prev => {
+      const updated = prev.filter(item => item.id !== id);
+      localStorage.setItem('voicedrop_following', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const [viewingCreator, setViewingCreator] = useState(null);
+
+  const openCreatorProfile = (creatorData) => {
+    if (!creatorData) return;
+    if (creatorData.id === user.id || creatorData.username === user.username || creatorData.id === "user_me") {
+      setCurrentTab('profile');
+      setViewingCreator(null);
+      return;
+    }
+    setViewingCreator(creatorData);
+  };
+
+  const closeCreatorProfile = () => {
+    setViewingCreator(null);
+  };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('voicedrop_user', JSON.stringify(user));
+    } catch (e) {}
+  }, [user]);
+
+  const updateUserProfile = (updatedFields) => {
+    setUser(prev => {
+      const updatedUser = { ...prev, ...updatedFields };
+      
+      // Update creator details on all posts created by this user across feed & profile
+      setPosts(currentPosts => currentPosts.map(p => {
+        if (p.creator.id === updatedUser.id || p.creator.username === prev.username || p.creator.id === "user_me") {
+          return {
+            ...p,
+            creator: {
+              ...p.creator,
+              name: updatedUser.name,
+              username: updatedUser.username,
+              avatar: updatedUser.avatar
+            }
+          };
+        }
+        return p;
+      }));
+
+      return updatedUser;
+    });
+    showToast("Profile updated successfully! ✨");
+  };
+  const [currentTab, setCurrentTab] = useState('feed'); // 'feed' | 'search' | 'notifications' | 'profile'
   const [activePlayingId, setActivePlayingId] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -168,11 +244,12 @@ export const AppProvider = ({ children }) => {
       voiceCaptionTitle: newPostData.title || "Voice Note Story",
       voiceTranscript: newPostData.transcript || "Here is my recorded voice caption for this moment!",
       optionalTextCaption: newPostData.textCaption || "",
-      likes: 1,
-      isLiked: true,
+      likes: 0,
+      isLiked: false,
       bookmarks: 0,
       isBookmarked: false,
       postedTime: "Just now",
+      createdAt: Date.now(),
       tags: newPostData.tags || ["#VoiceDrop"],
       waveform: newPostData.waveform || [30, 45, 60, 80, 95, 70, 50, 65, 85, 90, 70, 40, 60, 80, 90, 60, 35],
       voiceComments: []
@@ -212,6 +289,20 @@ export const AppProvider = ({ children }) => {
     showToast("Voice reply posted! 💬");
   };
 
+  // Delete Voice Comment from a Post
+  const deleteVoiceComment = (postId, commentId) => {
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        return {
+          ...p,
+          voiceComments: p.voiceComments.filter(vc => vc.id !== commentId)
+        };
+      }
+      return p;
+    }));
+    showToast("Voice reply deleted 🗑️");
+  };
+
   const openCommentModalForPost = (postId) => {
     setTargetCommentPostId(postId);
     setIsCommentModalOpen(true);
@@ -221,6 +312,14 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider value={{
       posts,
       user,
+      listenersList,
+      followingList,
+      removeListener,
+      unfollowUser,
+      viewingCreator,
+      openCreatorProfile,
+      closeCreatorProfile,
+      updateUserProfile,
       currentTab,
       setCurrentTab,
       activePlayingId,
@@ -232,6 +331,7 @@ export const AppProvider = ({ children }) => {
       toggleLike,
       toggleBookmark,
       deletePost,
+      deleteVoiceComment,
       sharePost,
       deviceFrame,
       setDeviceFrame,
@@ -251,7 +351,6 @@ export const AppProvider = ({ children }) => {
       setCurrentAudioTime,
       unreadNotifications,
       setUnreadNotifications,
-      trendingHashtags,
       toastMessage,
       showToast
     }}>
