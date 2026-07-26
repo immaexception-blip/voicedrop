@@ -31,9 +31,11 @@ export default function AuthModal() {
     }
 
     setIsLoading(true);
-    await loginWithEmail({ email, password });
+    const res = await loginWithEmail({ email, password });
     setIsLoading(false);
-    handleReset();
+    if (res && res.success) {
+      handleReset();
+    }
   };
 
   // Step 1 for SignUp or Forgot Password: Send OTP

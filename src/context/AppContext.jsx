@@ -30,35 +30,87 @@ export const AppProvider = ({ children }) => {
     return !!saved;
   });
 
+  // Local registry of registered user profiles (synced with Supabase)
+  const [usersDb, setUsersDb] = useState(() => {
+    const saved = localStorage.getItem('voicedrop_users_db');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
+  // ----------------------------------------------------
+  // REAL DATABASE LOGIN VALIDATION
+  // ----------------------------------------------------
   const loginWithEmail = async ({ email, password }) => {
-    const usernameSlug = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '_');
-    const authUser = {
-      id: `user_${Date.now()}`,
-      name: email.split('@')[0],
-      username: usernameSlug,
-      avatar: DEFAULT_GREY_AVATAR,
-      bio: "🎙️ Documenting moments with real voice notes.",
-      voiceBioDuration: 8,
-      voiceBioTranscript: `Hi! Welcome to @${usernameSlug}'s voice channel on VoiceDrop!`,
-      followers: listenersList.length,
-      following: followingList.length,
-      postsCount: 0,
-      email: email
-    };
+    const cleanEmail = email.trim().toLowerCase();
 
-    setUser(authUser);
-    setIsLoggedIn(true);
-    localStorage.setItem('voicedrop_user', JSON.stringify(authUser));
-    setIsAuthModalOpen(false);
-    showToast(`Logged in as @${usernameSlug}! 👋`);
+    // 1. Check Supabase DB profiles table
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', cleanEmail)
+        .single();
+
+      if (data) {
+        const dbUser = {
+          id: data.id,
+          name: data.name,
+          username: data.username,
+          avatar: data.avatar || DEFAULT_GREY_AVATAR,
+          bio: data.bio || "🎙️ Documenting moments with real voice notes.",
+          voiceBioDuration: data.voice_bio_duration || 8,
+          voiceBioTranscript: data.voice_bio_transcript || `Hi! Welcome to @${data.username}'s voice channel!`,
+          followers: listenersList.length,
+          following: followingList.length,
+          postsCount: 0,
+          email: cleanEmail
+        };
+
+        setUser(dbUser);
+        setIsLoggedIn(true);
+        localStorage.setItem('voicedrop_user', JSON.stringify(dbUser));
+        setIsAuthModalOpen(false);
+        showToast(`Welcome back @${data.username}! 👋`);
+        return { success: true };
+      }
+    } catch (e) {
+      console.warn("Supabase query error:", e);
+    }
+
+    // 2. Check local registered users DB registry
+    const existingDbAccount = usersDb.find(u => u.email === cleanEmail);
+    if (existingDbAccount) {
+      setUser(existingDbAccount);
+      setIsLoggedIn(true);
+      localStorage.setItem('voicedrop_user', JSON.stringify(existingDbAccount));
+      setIsAuthModalOpen(false);
+      showToast(`Welcome back @${existingDbAccount.username}! 👋`);
+      return { success: true };
+    }
+
+    // 3. NO ACCOUNT FOUND -> REJECT LOGIN
+    showToast("No account found with this email. Please Sign Up first ❌");
+    return { success: false, error: "Account not found. Please sign up." };
   };
 
+  // ----------------------------------------------------
+  // REAL DATABASE ACCOUNT CREATION
+  // ----------------------------------------------------
   const signUpWithEmail = async ({ email, password, name, username }) => {
+    const cleanEmail = email.trim().toLowerCase();
     const cleanUsername = username.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+
+    // Check if username/email already taken in DB
+    const existing = usersDb.find(u => u.email === cleanEmail || u.username === cleanUsername);
+    if (existing) {
+      showToast("Account already exists with this email or username. Please Log In.");
+      return { success: false, error: "Account already exists." };
+    }
+
+    const newUserId = `user_${Date.now()}`;
     const newUser = {
-      id: `user_${Date.now()}`,
+      id: newUserId,
       name: name,
       username: cleanUsername,
       avatar: DEFAULT_GREY_AVATAR,
@@ -68,14 +120,34 @@ export const AppProvider = ({ children }) => {
       followers: 0,
       following: 0,
       postsCount: 0,
-      email: email
+      email: cleanEmail
     };
+
+    // 1. Insert into Supabase DB profiles table
+    try {
+      await supabase.from('profiles').insert([{
+        id: newUserId,
+        name: name,
+        username: cleanUsername,
+        avatar: DEFAULT_GREY_AVATAR,
+        bio: "🎙️ Sharing authentic voice stories.",
+        email: cleanEmail
+      }]);
+    } catch (e) {
+      console.warn("Supabase profile insert error:", e);
+    }
+
+    // 2. Save to local users DB registry & active session
+    const updatedUsersDb = [...usersDb, newUser];
+    setUsersDb(updatedUsersDb);
+    localStorage.setItem('voicedrop_users_db', JSON.stringify(updatedUsersDb));
 
     setUser(newUser);
     setIsLoggedIn(true);
     localStorage.setItem('voicedrop_user', JSON.stringify(newUser));
     setIsAuthModalOpen(false);
     showToast(`Account created for @${cleanUsername}! 🎉`);
+    return { success: true };
   };
 
   const logout = () => {
