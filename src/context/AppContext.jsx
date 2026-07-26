@@ -125,15 +125,20 @@ export const AppProvider = ({ children }) => {
 
     // 1. Insert into Supabase DB profiles table
     try {
+      const validUuid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : '11111111-2222-3333-4444-' + Date.now().toString().padStart(12, '0');
+      
+      const profileData = {
+        id: validUuid,
+        name: name,
+        username: cleanUsername,
+        avatar: DEFAULT_GREY_AVATAR,
+        bio: "🎙️ Sharing authentic voice stories.",
+        email: cleanEmail
+      };
+
       const { data, error } = await supabase
         .from('profiles')
-        .upsert([{
-          name: name,
-          username: cleanUsername,
-          avatar: DEFAULT_GREY_AVATAR,
-          bio: "🎙️ Sharing authentic voice stories.",
-          email: cleanEmail
-        }], { onConflict: 'username' })
+        .upsert([profileData], { onConflict: 'username' })
         .select();
 
       if (error) {
