@@ -125,14 +125,22 @@ export const AppProvider = ({ children }) => {
 
     // 1. Insert into Supabase DB profiles table
     try {
-      await supabase.from('profiles').insert([{
-        id: newUserId,
-        name: name,
-        username: cleanUsername,
-        avatar: DEFAULT_GREY_AVATAR,
-        bio: "🎙️ Sharing authentic voice stories.",
-        email: cleanEmail
-      }]);
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert([{
+          name: name,
+          username: cleanUsername,
+          avatar: DEFAULT_GREY_AVATAR,
+          bio: "🎙️ Sharing authentic voice stories.",
+          email: cleanEmail
+        }], { onConflict: 'username' })
+        .select();
+
+      if (error) {
+        console.error("Supabase Profile Insert Error:", error);
+      } else if (data && data[0]) {
+        newUser.id = data[0].id;
+      }
     } catch (e) {
       console.warn("Supabase profile insert error:", e);
     }
@@ -389,6 +397,23 @@ export const AppProvider = ({ children }) => {
 
     setPosts([newPost, ...posts]);
     setUser(prev => ({ ...prev, postsCount: prev.postsCount + 1 }));
+
+    // Sync post insertion to Supabase Cloud Database
+    try {
+      supabase.from('posts').insert([{
+        image_url: newPost.imageUrl,
+        audio_url: newPost.audioUrl,
+        audio_duration: newPost.audioDuration,
+        voice_caption_title: newPost.voiceCaptionTitle,
+        voice_transcript: newPost.voiceTranscript,
+        optional_text_caption: newPost.optionalTextCaption
+      }]).then(({ data, error }) => {
+        if (error) console.error("Supabase Post Insert Error:", error);
+      });
+    } catch (e) {
+      console.warn("Supabase post insert error:", e);
+    }
+
     setIsRecorderOpen(false);
     setCurrentTab('feed');
     showToast("VoiceDrop published to feed! 🎙️✨");
