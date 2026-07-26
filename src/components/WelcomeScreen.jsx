@@ -1,8 +1,8 @@
 import React from 'react';
-import { Sparkles, Mic, Heart, Lock, ArrowRight, Play, Radio, Users } from 'lucide-react';
+import { Sparkles, Mic, Heart, Lock, ArrowRight, Radio, Users } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
-export default function WelcomeScreen({ onExploreGuest }) {
+export default function WelcomeScreen() {
   const { setIsAuthModalOpen } = useApp();
 
   return (
@@ -253,22 +253,6 @@ export default function WelcomeScreen({ onExploreGuest }) {
             }}
           >
             Log In to Your Voice Channel
-          </button>
-
-          <button 
-            onClick={onExploreGuest}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-muted)',
-              fontSize: '0.8rem',
-              fontWeight: '600',
-              marginTop: '4px',
-              cursor: 'pointer',
-              textDecoration: 'underline'
-            }}
-          >
-            Preview Feed as Guest
           </button>
         </div>
 

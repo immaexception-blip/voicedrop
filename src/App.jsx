@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import MobileDeviceFrame from './components/MobileDeviceFrame';
 import Navbar from './components/Navbar';
@@ -15,7 +15,40 @@ import WelcomeScreen from './components/WelcomeScreen';
 
 function MainAppContent() {
   const { currentTab, posts, toastMessage, isLoggedIn } = useApp();
-  const [isGuestExploring, setIsGuestExploring] = useState(false);
+
+  // Strict Logged Out View: Show ONLY Welcome Screen + Auth Modal
+  if (!isLoggedIn) {
+    return (
+      <div className="app-screen">
+        <WelcomeScreen />
+        <AuthModal />
+        
+        {/* Floating Toast Notification */}
+        {toastMessage && (
+          <div style={{
+            position: 'absolute',
+            bottom: '86px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(15, 23, 42, 0.95)',
+            border: '1px solid var(--accent-aqua)',
+            color: '#fff',
+            padding: '10px 18px',
+            borderRadius: 'var(--radius-full)',
+            fontSize: '0.82rem',
+            fontWeight: '700',
+            boxShadow: 'var(--shadow-glow)',
+            zIndex: 1200,
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+            animation: 'fadeIn 0.2s ease'
+          }}>
+            {toastMessage}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="app-screen">
@@ -36,18 +69,11 @@ function MainAppContent() {
         )}
 
         {currentTab === 'search' && <SearchView />}
-
         {currentTab === 'notifications' && <NotificationsView />}
-
         {currentTab === 'profile' && <ProfileView />}
       </main>
 
       <BottomNav />
-
-      {/* Logged Out Welcome Marketing Screen */}
-      {!isLoggedIn && !isGuestExploring && (
-        <WelcomeScreen onExploreGuest={() => setIsGuestExploring(true)} />
-      )}
 
       {/* Studio Modals, Auth & Other Creator Profiles */}
       <VoiceRecorderModal />
