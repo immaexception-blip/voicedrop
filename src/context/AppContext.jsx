@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { samplePosts, currentUser, initialListeners, initialFollowing } from '../utils/initialData';
+import { samplePosts, currentUser, initialListeners, initialFollowing, DEFAULT_GREY_AVATAR } from '../utils/initialData';
 import { speakCaptionText, playVoiceAudioSound, stopVoiceAudioSound } from '../utils/audioUtils';
 
 const AppContext = createContext();
@@ -38,7 +38,7 @@ export const AppProvider = ({ children }) => {
       id: `user_${Date.now()}`,
       name: email.split('@')[0],
       username: usernameSlug,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${usernameSlug}`,
+      avatar: DEFAULT_GREY_AVATAR,
       bio: "🎙️ Documenting moments with real voice notes.",
       voiceBioDuration: 8,
       voiceBioTranscript: `Hi! Welcome to @${usernameSlug}'s voice channel on VoiceDrop!`,
@@ -61,7 +61,7 @@ export const AppProvider = ({ children }) => {
       id: `user_${Date.now()}`,
       name: name,
       username: cleanUsername,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${cleanUsername}`,
+      avatar: DEFAULT_GREY_AVATAR,
       bio: "🎙️ Sharing authentic voice stories.",
       voiceBioDuration: 6,
       voiceBioTranscript: `Hey everyone, I'm ${name}! Welcome to my voice channel.`,

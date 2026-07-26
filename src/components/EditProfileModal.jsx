@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { X, Mic, Square, Play, Pause, RefreshCw, Upload, Check, User } from 'lucide-react';
+import { X, Mic, Square, Play, Pause, RefreshCw, Upload, Check, User, RotateCcw } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { playRecordingBeep, generateVoiceBlob, playVoiceAudioSound, stopVoiceAudioSound } from '../utils/audioUtils';
+import { DEFAULT_GREY_AVATAR } from '../utils/initialData';
 
 export default function EditProfileModal({ isOpen, onClose }) {
   const { user, updateUserProfile, showToast } = useApp();
@@ -154,25 +155,47 @@ export default function EditProfileModal({ isOpen, onClose }) {
             <img src={avatar} alt="Profile" className="avatar-img" />
           </div>
 
-          <button 
-            onClick={() => fileInputRef.current && fileInputRef.current.click()}
-            style={{
-              background: 'var(--bg-glass)',
-              border: '1px solid var(--bg-card-border)',
-              color: 'var(--accent-aqua)',
-              padding: '8px 16px',
-              borderRadius: '20px',
-              fontSize: '0.82rem',
-              fontWeight: '800',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            <Upload size={14} color="var(--accent-aqua)" />
-            <span>Change Profile Picture</span>
-          </button>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+            <button 
+              onClick={() => fileInputRef.current && fileInputRef.current.click()}
+              style={{
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--bg-card-border)',
+                color: 'var(--accent-aqua)',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                fontSize: '0.82rem',
+                fontWeight: '800',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              <Upload size={14} color="var(--accent-aqua)" />
+              <span>Change Photo</span>
+            </button>
+
+            <button 
+              onClick={() => { setAvatar(DEFAULT_GREY_AVATAR); showToast("Set to standard grey avatar"); }}
+              style={{
+                background: 'var(--bg-glass)',
+                border: '1px solid var(--bg-card-border)',
+                color: 'var(--text-muted)',
+                padding: '8px 14px',
+                borderRadius: '20px',
+                fontSize: '0.82rem',
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              <RotateCcw size={13} />
+              <span>Use Standard Icon</span>
+            </button>
+          </div>
           <input 
             type="file" 
             ref={fileInputRef} 
