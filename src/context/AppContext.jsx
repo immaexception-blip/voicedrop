@@ -25,6 +25,11 @@ export const AppProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : currentUser;
   });
 
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    const saved = localStorage.getItem('voicedrop_user');
+    return !!saved;
+  });
+
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const loginWithEmail = async ({ email, password }) => {
@@ -44,6 +49,7 @@ export const AppProvider = ({ children }) => {
     };
 
     setUser(authUser);
+    setIsLoggedIn(true);
     localStorage.setItem('voicedrop_user', JSON.stringify(authUser));
     setIsAuthModalOpen(false);
     showToast(`Logged in as @${usernameSlug}! 👋`);
@@ -66,6 +72,7 @@ export const AppProvider = ({ children }) => {
     };
 
     setUser(newUser);
+    setIsLoggedIn(true);
     localStorage.setItem('voicedrop_user', JSON.stringify(newUser));
     setIsAuthModalOpen(false);
     showToast(`Account created for @${cleanUsername}! 🎉`);
@@ -73,6 +80,7 @@ export const AppProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('voicedrop_user');
+    setIsLoggedIn(false);
     setUser(currentUser);
     showToast("Logged out successfully 👋");
   };
@@ -364,6 +372,8 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider value={{
       posts,
       user,
+      isLoggedIn,
+      setIsLoggedIn,
       isAuthModalOpen,
       setIsAuthModalOpen,
       loginWithEmail,

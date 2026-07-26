@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import MobileDeviceFrame from './components/MobileDeviceFrame';
 import Navbar from './components/Navbar';
@@ -11,9 +11,11 @@ import VoiceRecorderModal from './components/VoiceRecorderModal';
 import VoiceCommentModal from './components/VoiceCommentModal';
 import CreatorProfileModal from './components/CreatorProfileModal';
 import AuthModal from './components/AuthModal';
+import WelcomeScreen from './components/WelcomeScreen';
 
 function MainAppContent() {
-  const { currentTab, posts, toastMessage } = useApp();
+  const { currentTab, posts, toastMessage, isLoggedIn } = useApp();
+  const [isGuestExploring, setIsGuestExploring] = useState(false);
 
   return (
     <div className="app-screen">
@@ -41,6 +43,11 @@ function MainAppContent() {
       </main>
 
       <BottomNav />
+
+      {/* Logged Out Welcome Marketing Screen */}
+      {!isLoggedIn && !isGuestExploring && (
+        <WelcomeScreen onExploreGuest={() => setIsGuestExploring(true)} />
+      )}
 
       {/* Studio Modals, Auth & Other Creator Profiles */}
       <VoiceRecorderModal />
