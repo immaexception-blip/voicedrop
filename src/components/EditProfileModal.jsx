@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, Mic, Square, Play, Pause, RefreshCw, Upload, Check, User, RotateCcw } from 'lucide-react';
+import { X, Mic, Square, Play, Pause, RefreshCw, Upload, Check, User, Trash2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { playRecordingBeep, generateVoiceBlob, playVoiceAudioSound, stopVoiceAudioSound } from '../utils/audioUtils';
 import { DEFAULT_GREY_AVATAR } from '../utils/initialData';
@@ -177,11 +177,11 @@ export default function EditProfileModal({ isOpen, onClose }) {
             </button>
 
             <button 
-              onClick={() => { setAvatar(DEFAULT_GREY_AVATAR); showToast("Set to standard grey avatar"); }}
+              onClick={() => { setAvatar(DEFAULT_GREY_AVATAR); showToast("Profile picture removed"); }}
               style={{
-                background: 'var(--bg-glass)',
-                border: '1px solid var(--bg-card-border)',
-                color: 'var(--text-muted)',
+                background: 'rgba(244,63,94,0.08)',
+                border: '1px solid rgba(244,63,94,0.2)',
+                color: 'var(--accent-rose)',
                 padding: '8px 14px',
                 borderRadius: '20px',
                 fontSize: '0.82rem',
@@ -192,8 +192,8 @@ export default function EditProfileModal({ isOpen, onClose }) {
                 cursor: 'pointer'
               }}
             >
-              <RotateCcw size={13} />
-              <span>Use Standard Icon</span>
+              <Trash2 size={13} />
+              <span>Remove Picture</span>
             </button>
           </div>
           <input 
