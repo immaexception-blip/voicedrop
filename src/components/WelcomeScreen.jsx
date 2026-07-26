@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Mic, Heart, Lock, ArrowRight, Radio, Users } from 'lucide-react';
+import { Sparkles, Heart, Lock, ArrowRight, Radio, Users } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function WelcomeScreen() {
@@ -38,7 +38,7 @@ export default function WelcomeScreen() {
       {/* Main Content */}
       <div style={{
         flex: 1,
-        padding: '36px 20px 24px 20px',
+        padding: '42px 20px 32px 20px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -50,24 +50,8 @@ export default function WelcomeScreen() {
         width: '100%'
       }}>
 
-        {/* Top Brand Logo & Title */}
-        <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <div style={{
-            width: '72px',
-            height: '72px',
-            borderRadius: '24px',
-            background: 'var(--gradient-aqua)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#0f172a',
-            margin: '0 auto 16px auto',
-            boxShadow: 'var(--shadow-glow)',
-            transform: 'rotate(-4deg)'
-          }}>
-            <Mic size={36} strokeWidth={2.5} />
-          </div>
-
+        {/* Top Brand Title (No AI Emoji Icon) */}
+        <div style={{ textAlign: 'center', marginTop: '24px' }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -75,36 +59,36 @@ export default function WelcomeScreen() {
             background: 'rgba(0, 242, 254, 0.12)',
             border: '1px solid var(--accent-aqua)',
             borderRadius: '20px',
-            padding: '4px 12px',
+            padding: '4px 14px',
             fontSize: '0.74rem',
             fontWeight: '800',
             color: 'var(--accent-aqua)',
-            marginBottom: '12px',
+            marginBottom: '16px',
             textTransform: 'uppercase',
             letterSpacing: '1px'
           }}>
             <Sparkles size={12} />
-            <span>Intimate Voice Social Platform</span>
+            <span>Voice Social Platform</span>
           </div>
 
           <h1 style={{
             fontFamily: 'Outfit, sans-serif',
             fontWeight: '900',
-            fontSize: '2rem',
+            fontSize: '2.3rem',
             color: 'var(--text-primary)',
-            lineHeight: '1.2',
-            marginBottom: '10px'
+            lineHeight: '1.15',
+            marginBottom: '12px'
           }}>
-            Share Moments with Real Voice 🎙️
+            VoiceDrop
           </h1>
 
           <p style={{
-            fontSize: '0.9rem',
+            fontSize: '0.94rem',
             color: 'var(--text-secondary)',
-            lineHeight: '1.45',
-            padding: '0 10px'
+            lineHeight: '1.5',
+            padding: '0 8px'
           }}>
-            Send photo stories paired with authentic voice narration to your close friends and loved ones. Hear real emotion, laughter, and warmth in their actual voice.
+            Send intimate photo stories paired with authentic voice narration to your close friends and loved ones. Hear real emotion, laughter, and warmth in their actual voice.
           </p>
         </div>
 
@@ -114,7 +98,7 @@ export default function WelcomeScreen() {
           flexDirection: 'column',
           gap: '12px',
           width: '100%',
-          margin: '24px 0'
+          margin: '28px 0'
         }}>
           {/* Feature 1 */}
           <div style={{
@@ -235,7 +219,7 @@ export default function WelcomeScreen() {
               boxShadow: 'var(--shadow-glow)'
             }}
           >
-            <span>Get Started with Email OTP</span>
+            <span>Create Account</span>
             <ArrowRight size={18} />
           </button>
 
@@ -252,7 +236,7 @@ export default function WelcomeScreen() {
               cursor: 'pointer'
             }}
           >
-            Log In to Your Voice Channel
+            Log In
           </button>
         </div>
 
